@@ -21,7 +21,7 @@ jobs:
           cmake-version: '3.31.6'
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXE_LINKER_FLAGS="-static"
 
       - name: Build
         run: cmake --build build -j$(nproc)
