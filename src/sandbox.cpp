@@ -124,6 +124,9 @@ std::optional<SandboxMode> sandbox_mode_from_string(std::string_view value) {
     if (lowered == "host-tools") {
         return SandboxMode::HostTools;
     }
+    if (lowered == "disabled") {
+        return SandboxMode::Disabled;
+    }
     return std::nullopt;
 }
 
