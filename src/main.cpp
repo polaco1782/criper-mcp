@@ -104,9 +104,13 @@ int main(int argc, char** argv) {
         std::filesystem::create_directories(root_path);
         root_path = std::filesystem::weakly_canonical(root_path);
 
-        if (!criper::initialize_sandbox(root_path, sandbox_mode)) {
-            std::cerr << "Failed to initialize filesystem sandbox. Aborting for safety." << std::endl;
-            return 1;
+        if (sandbox_mode != criper::SandboxMode::Disabled) {
+            if (!criper::initialize_sandbox(root_path, sandbox_mode)) {
+                std::cerr << "Failed to initialize filesystem sandbox. Aborting for safety." << std::endl;
+                return 1;
+            }
+        } else {
+            std::cerr << "Warning: Filesystem sandbox is disabled. This is unsafe and not recommended." << std::endl;
         }
 
         criper::McpServer server(std::move(root_path), std::move(bind_address), port, debug_enabled);

@@ -9,6 +9,7 @@ namespace criper {
 enum class SandboxMode {
     Strict,
     HostTools,
+    Disabled,
 };
 
 [[nodiscard]] std::optional<SandboxMode> sandbox_mode_from_string(std::string_view value);

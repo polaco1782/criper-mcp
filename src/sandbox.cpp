@@ -133,6 +133,8 @@ std::string_view sandbox_mode_name(const SandboxMode mode) noexcept {
         return "strict";
     case SandboxMode::HostTools:
         return "host-tools";
+    case SandboxMode::Disabled:
+        return "disabled";
     }
 
     return "unknown";
