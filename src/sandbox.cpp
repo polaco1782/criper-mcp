@@ -78,6 +78,10 @@ constexpr __u64 kLandlockReadOnlyAccess =
     LANDLOCK_ACCESS_FS_READ_FILE |
     LANDLOCK_ACCESS_FS_READ_DIR;
 
+constexpr __u64 kLandlockDeviceAccess =
+    LANDLOCK_ACCESS_FS_READ_FILE |
+    LANDLOCK_ACCESS_FS_WRITE_FILE;
+
 int landlock_create_ruleset(const struct landlock_ruleset_attr* attribute, const std::size_t size, const __u32 flags) {
     return static_cast<int>(syscall(__NR_landlock_create_ruleset, attribute, size, flags));
 }
@@ -108,6 +112,12 @@ constexpr std::array<std::string_view, 8> kHostToolReadOnlyDirectories{
     "/lib64",
     "/usr/lib",
     "/usr/lib64",
+};
+
+constexpr std::array<std::string_view, 3> kDeviceReadWritePaths{
+    "/dev/null",
+    "/dev/zero",
+    "/dev/urandom",
 };
 
 } // namespace
@@ -278,6 +288,16 @@ bool Sandbox::activate() {
         return false;
     }
     LOG_DEBUG("[Sandbox] Allowed R/W: %s", root_directory_.c_str());
+
+    // Always expose a minimal device surface; these are regular files so
+    // only file-compatible access bits are valid (no MAKE_*/REMOVE_*).
+    for (const std::string_view device_path : kDeviceReadWritePaths) {
+        if (!add_rule(fs::path(device_path), kLandlockDeviceAccess)) {
+            close(ruleset_fd);
+            return false;
+        }
+        LOG_DEBUG("[Sandbox] Allowed R/W: %.*s", static_cast<int>(device_path.size()), device_path.data());
+    }
 
     if (mode_ == SandboxMode::HostTools) {
         // Host-tools mode keeps writes confined to the configured root while
