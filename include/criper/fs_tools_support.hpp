@@ -33,10 +33,11 @@ struct ExecResult {
 
 class FileToolsContext {
 public:
-    FileToolsContext(fs::path root_path, bool debug_enabled);
+    FileToolsContext(fs::path root_path, bool debug_enabled, bool verbose_enabled);
 
     [[nodiscard]] const fs::path& root_path() const noexcept;
     [[nodiscard]] bool debug_enabled() const noexcept;
+    [[nodiscard]] bool verbose_enabled() const noexcept;
     [[nodiscard]] fs::path resolve_path(const std::string& raw_path, bool must_exist) const;
     [[nodiscard]] json make_operation_from_arguments(const json& arguments) const;
 
@@ -45,10 +46,12 @@ private:
 
     fs::path root_path_;
     bool debug_enabled_;
+    bool verbose_enabled_;
 };
 
 [[nodiscard]] std::string truncate_for_log(std::string_view text, std::size_t limit = 4096U);
 void debug_log(bool enabled, const std::string& message);
+void verbose_log(bool enabled, const std::string& message);
 
 [[nodiscard]] bool path_has_prefix(const fs::path& prefix, const fs::path& path);
 [[nodiscard]] std::string permissions_to_octal(fs::perms permissions);

@@ -9,7 +9,7 @@ namespace criper {
 
 class FileTools {
 public:
-    explicit FileTools(std::filesystem::path root_path, bool debug_enabled);
+    FileTools(std::filesystem::path root_path, bool debug_enabled, bool verbose_enabled);
 
     [[nodiscard]] json list_tools() const;
     [[nodiscard]] json call(const std::string& tool_name, const json& arguments) const;

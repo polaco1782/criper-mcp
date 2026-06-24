@@ -128,9 +128,10 @@ void write_all_to_fd(const int fd, const std::string& content) {
 
 } // namespace
 
-FileToolsContext::FileToolsContext(fs::path root_path, const bool debug_enabled)
+FileToolsContext::FileToolsContext(fs::path root_path, const bool debug_enabled, const bool verbose_enabled)
     : root_path_(std::move(root_path))
-    , debug_enabled_(debug_enabled) {
+    , debug_enabled_(debug_enabled)
+    , verbose_enabled_(verbose_enabled) {
 }
 
 const fs::path& FileToolsContext::root_path() const noexcept {
@@ -139,6 +140,10 @@ const fs::path& FileToolsContext::root_path() const noexcept {
 
 bool FileToolsContext::debug_enabled() const noexcept {
     return debug_enabled_;
+}
+
+bool FileToolsContext::verbose_enabled() const noexcept {
+    return verbose_enabled_;
 }
 
 fs::path FileToolsContext::normalize_client_path(const fs::path& input_path) const {
@@ -217,6 +222,15 @@ void debug_log(const bool enabled, const std::string& message) {
 
     const std::lock_guard<std::mutex> guard(debug_log_mutex());
     std::cerr << "[debug] " << message << '\n';
+}
+
+void verbose_log(const bool enabled, const std::string& message) {
+    if (!enabled) {
+        return;
+    }
+
+    const std::lock_guard<std::mutex> guard(debug_log_mutex());
+    std::cerr << "[verbose] " << message << '\n';
 }
 
 bool path_has_prefix(const fs::path& prefix, const fs::path& path) {

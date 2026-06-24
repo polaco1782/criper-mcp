@@ -95,7 +95,7 @@ void apply_cors_headers(httplib::Response& response, const httplib::Request& req
     };
 }
 
-[[nodiscard]] std::optional<json> dispatch_request(const fs::path& root_path, const bool debug_enabled, const json& request) {
+[[nodiscard]] std::optional<json> dispatch_request(const fs::path& root_path, const bool debug_enabled, const bool verbose_enabled, const json& request) {
     const json response_id = request.contains("id") ? request.at("id") : json(nullptr);
 
     if (!request.contains("jsonrpc") || !request.at("jsonrpc").is_string() || request.at("jsonrpc") != "2.0") {
@@ -120,7 +120,7 @@ void apply_cors_headers(httplib::Response& response, const httplib::Request& req
         return std::nullopt;
     }
 
-    FileTools tools(root_path, debug_enabled);
+    FileTools tools(root_path, debug_enabled, verbose_enabled);
     if (method == "initialize") {
         auto response = json{
             {"jsonrpc", "2.0"},
@@ -188,10 +188,11 @@ void apply_cors_headers(httplib::Response& response, const httplib::Request& req
 [[nodiscard]] std::optional<std::string> handle_jsonrpc_payload(
     const fs::path& root_path,
     const bool debug_enabled,
+    const bool verbose_enabled,
     const json& payload
 ) {
     if (payload.is_object()) {
-        const auto response = dispatch_request(root_path, debug_enabled, payload);
+        const auto response = dispatch_request(root_path, debug_enabled, verbose_enabled, payload);
         if (!response.has_value()) {
             return std::string();
         }
@@ -215,7 +216,7 @@ void apply_cors_headers(httplib::Response& response, const httplib::Request& req
         }
 
         try {
-            const auto response = dispatch_request(root_path, debug_enabled, request);
+            const auto response = dispatch_request(root_path, debug_enabled, verbose_enabled, request);
             if (response.has_value()) {
                 responses.push_back(*response);
             }
@@ -237,12 +238,14 @@ McpServer::McpServer(
     std::filesystem::path root_path,
     std::string bind_address,
     const std::uint16_t port,
-    const bool debug_enabled
+    const bool debug_enabled,
+    const bool verbose_enabled
 )
     : root_path_(std::move(root_path))
     , bind_address_(std::move(bind_address))
     , port_(port)
-    , debug_enabled_(debug_enabled) {
+    , debug_enabled_(debug_enabled)
+    , verbose_enabled_(verbose_enabled) {
     std::filesystem::create_directories(root_path_);
     root_path_ = std::filesystem::weakly_canonical(root_path_);
 }
@@ -297,7 +300,7 @@ std::optional<std::string> McpServer::handle_http_request(
 
     try {
         const json parsed = json::parse(body);
-        const auto serialized = handle_jsonrpc_payload(root_path_, debug_enabled_, parsed);
+        const auto serialized = handle_jsonrpc_payload(root_path_, debug_enabled_, verbose_enabled_, parsed);
         if (!serialized.has_value()) {
             debug_log(debug_enabled_, "jsonrpc request completed without HTTP response");
             return std::nullopt;

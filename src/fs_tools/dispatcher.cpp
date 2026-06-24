@@ -4,8 +4,8 @@
 
 namespace criper {
 
-FileTools::FileTools(std::filesystem::path root_path, const bool debug_enabled)
-    : context_(std::move(root_path), debug_enabled) {
+FileTools::FileTools(std::filesystem::path root_path, const bool debug_enabled, const bool verbose_enabled)
+    : context_(std::move(root_path), debug_enabled, verbose_enabled) {
 }
 
 json FileTools::list_tools() const {
@@ -65,6 +65,29 @@ json FileTools::call(const std::string& tool_name, const json& arguments) const 
             result = make_tool_result(call_fs_remove(context_, arguments));
         } else {
             result = make_tool_error("unknown tool: " + tool_name);
+        }
+
+        const bool is_error = result.value("isError", false);
+        if (context_.verbose_enabled()) {
+            std::string status = is_error ? "failed" : "succeeded";
+            if (!is_error) {
+                if (tool_name == "fs_find" || tool_name == "fs_grep") {
+                    const auto& matches = result["structuredContent"]["matches"];
+                    status = matches.is_array() && matches.empty() ? "not_found" : "found";
+                } else if (tool_name == "fs_list") {
+                    const auto& entries = result["structuredContent"]["entries"];
+                    status = entries.is_array() && entries.empty() ? "empty" : "found";
+                } else if (tool_name == "fs_stat") {
+                    status = result["structuredContent"].value("exists", false) ? "found" : "not_found";
+                } else if (tool_name == "fs_exec") {
+                    const int exit_code = result["structuredContent"].value("exit_code", -1);
+                    status = exit_code == 0 ? "succeeded" : "failed";
+                } else if (tool_name == "fs_patch") {
+                    const std::uint64_t matches = result["structuredContent"].value("matches", static_cast<std::uint64_t>(0));
+                    status = matches == 0 ? "no_matches" : "matched";
+                }
+            }
+            verbose_log(context_.verbose_enabled(), "tools/call name=" + tool_name + " status=" + status);
         }
 
         debug_log(

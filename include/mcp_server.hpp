@@ -9,7 +9,7 @@ namespace criper {
 
 class McpServer {
 public:
-    McpServer(std::filesystem::path root_path, std::string bind_address, std::uint16_t port, bool debug_enabled);
+    McpServer(std::filesystem::path root_path, std::string bind_address, std::uint16_t port, bool debug_enabled, bool verbose_enabled);
 
     [[nodiscard]] const std::filesystem::path& root_path() const noexcept;
     [[nodiscard]] const std::string& bind_address() const noexcept;
@@ -23,6 +23,7 @@ private:
     std::string bind_address_;
     std::uint16_t port_;
     bool debug_enabled_;
+    bool verbose_enabled_;
 
     [[nodiscard]] std::optional<std::string> handle_http_request(
         std::string_view method,

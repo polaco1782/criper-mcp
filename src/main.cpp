@@ -12,13 +12,14 @@ namespace {
 void print_usage(const char* program_name) {
     std::cerr
         << "Usage: " << program_name
-        << " [--root <path>] [--host <address>] [--port <port>] [--sandbox-mode <strict|host-tools>] [--debug]\n"
+        << " [--root <path>] [--host <address>] [--port <port>] [--sandbox-mode <strict|host-tools>] [--debug] [--verbose]\n"
         << "Environment:\n"
         << "  CRIPER_MCP_ROOT  Root directory exposed by the server.\n"
         << "  CRIPER_MCP_HOST  Bind address. Defaults to 127.0.0.1.\n"
         << "  CRIPER_MCP_PORT  TCP port. Defaults to 9999.\n"
         << "  CRIPER_MCP_SANDBOX_MODE  Sandbox mode: strict or host-tools. Defaults to strict.\n"
-        << "  CRIPER_MCP_DEBUG Enable debug logging when set to 1, true, yes, or on.\n";
+        << "  CRIPER_MCP_DEBUG Enable debug logging when set to 1, true, yes, or on.\n"
+        << "  CRIPER_MCP_VERBOSE Enable concise tool state logging when set to 1, true, yes, or on.\n";
 }
 
 std::string env_or_default(const char* name, std::string fallback) {
@@ -68,6 +69,7 @@ int main(int argc, char** argv) {
         criper::SandboxMode sandbox_mode =
             parse_sandbox_mode_or_throw(env_or_default("CRIPER_MCP_SANDBOX_MODE", "strict"));
         bool debug_enabled = env_bool_or_default("CRIPER_MCP_DEBUG", false);
+        bool verbose_enabled = env_bool_or_default("CRIPER_MCP_VERBOSE", false);
 
         for (int index = 1; index < argc; ++index) {
             const std::string argument = argv[index];
@@ -79,6 +81,11 @@ int main(int argc, char** argv) {
 
             if (argument == "--debug") {
                 debug_enabled = true;
+                continue;
+            }
+
+            if (argument == "--verbose") {
+                verbose_enabled = true;
                 continue;
             }
 
@@ -113,7 +120,7 @@ int main(int argc, char** argv) {
             std::cerr << "Warning: Filesystem sandbox is disabled. This is unsafe and not recommended." << std::endl;
         }
 
-        criper::McpServer server(std::move(root_path), std::move(bind_address), port, debug_enabled);
+        criper::McpServer server(std::move(root_path), std::move(bind_address), port, debug_enabled, verbose_enabled);
 
         std::cout
             << "Serving MCP over HTTP on " << server.bind_address() << ":" << server.port()
