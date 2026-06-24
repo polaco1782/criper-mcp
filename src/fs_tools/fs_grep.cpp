@@ -93,7 +93,7 @@ static bool is_binary_file(const fs::path& p) {
 [[nodiscard]] json grep_schema() {
     json schema = base_schema();
     schema["properties"] = {
-        {"pattern", {{"type", "string"}, {"description", "Text or regex to search for."}}},
+        {"pattern", {{"type", "string"}, {"description", "Text pattern or regex to search within file contents (not for searching filenames)."}}},
         {"path", {{"type", "string"}, {"description", "File or directory to search. Default: ."}}},
         {"max_results", {{"type", "integer"}, {"minimum", 1}, {"description", "Maximum matches to return."}}},
         {"context", {{"type", "integer"}, {"minimum", 0}, {"description", "Include N lines before and after each match."}}},
@@ -107,7 +107,7 @@ static bool is_binary_file(const fs::path& p) {
 } // namespace
 
 json make_fs_grep_spec() {
-    return make_tool_spec("fs_grep", "Search through files for matching text.", grep_schema());
+    return make_tool_spec("fs_grep", "Search for text patterns within file contents (searches text inside files, not filenames).", grep_schema());
 }
 
 json call_fs_grep(const FileToolsContext& context, const json& arguments) {

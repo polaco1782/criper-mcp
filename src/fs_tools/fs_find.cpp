@@ -7,7 +7,7 @@ namespace {
 [[nodiscard]] json find_schema() {
     json schema = base_schema();
     schema["properties"] = {
-        {"pattern", {{"type", "string"}, {"description", "Filename or relative path pattern to search for."}}},
+        {"pattern", {{"type", "string"}, {"description", "Filename or path pattern to match (searches directory/file names, not file contents)."}}},
         {"path", {{"type", "string"}, {"description", "Directory or file to search from. Default: ."}}},
         {"recursive", {{"type", "boolean"}, {"description", "Search nested directories too. Default: true"}}},
         {"max_results", {{"type", "integer"}, {"minimum", 1}, {"description", "Maximum matches to return."}}},
@@ -26,7 +26,7 @@ namespace {
 } // namespace
 
 json make_fs_find_spec() {
-    return make_tool_spec("fs_find", "Search for files and directories by name or relative path.", find_schema());
+    return make_tool_spec("fs_find", "Find files and directories by matching their names or paths (searches file/directory names, not content).", find_schema());
 }
 
 json call_fs_find(const FileToolsContext& context, const json& arguments) {

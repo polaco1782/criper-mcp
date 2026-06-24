@@ -12,7 +12,7 @@ namespace {
     const json operation_kind_schema = {
         {"type", "string"},
         {"enum", json::array({"replace", "insert_before", "insert_after", "delete"})},
-        {"description", "Patch operation kind."},
+        {"description", "Operation: replace (swap text), insert_before (add text before match), insert_after (add text after match), or delete (remove text)."},
     };
     schema["properties"] = {
         {"path", {{"type", "string"}, {"description", "File to patch."}}},
@@ -23,23 +23,23 @@ namespace {
         }},
         {"find", {
             {"type", "string"},
-            {"description", "Text to find when using the simple single-operation form."},
+            {"description", "Literal text to find (exact string match, NOT regex). Must be a non-empty substring that exists in the file."},
         }},
         {"replace", {
             {"type", "string"},
-            {"description", "Replacement text for simple replace operations."},
+            {"description", "Literal replacement text (for replace operations only). Use empty string to delete."},
         }},
         {"content", {
             {"type", "string"},
-            {"description", "Text to insert for simple insert operations."},
+            {"description", "Literal text to insert (for insert_before or insert_after operations only)."},
         }},
         {"all", {
             {"type", "boolean"},
-            {"description", "Apply to every match instead of only the first match."},
+            {"description", "If true, apply operation to ALL matches in file. If false (default), apply to first match only."},
         }},
         {"operations", {
             {"type", "array"},
-            {"description", "Optional advanced form: apply multiple patch operations in order."},
+            {"description", "For multiple edits: array of operations applied in order. Use this instead of simple form when you need multiple changes."},
             {"items", {
                 {"type", "object"},
                 {"additionalProperties", false},
@@ -51,19 +51,19 @@ namespace {
                     }},
                     {"find", {
                         {"type", "string"},
-                        {"description", "Text to find."},
+                        {"description", "Literal text to find (exact string match, NOT regex)."},
                     }},
                     {"replace", {
                         {"type", "string"},
-                        {"description", "Replacement text for replace operations."},
+                        {"description", "Literal replacement text for replace operations."},
                     }},
                     {"content", {
                         {"type", "string"},
-                        {"description", "Text to insert for insert_before or insert_after."},
+                        {"description", "Literal text to insert for insert_before or insert_after."},
                     }},
                     {"all", {
                         {"type", "boolean"},
-                        {"description", "Apply to every match instead of only the first match."},
+                        {"description", "If true, apply to all matches. If false (default), apply to first match only."},
                     }},
                 }},
                 {"required", json::array({"find"})},
@@ -87,7 +87,7 @@ namespace {
 json make_fs_patch_spec() {
     return make_tool_spec(
         "fs_patch",
-        "Use for small changes, patch a text file using simple search/replace style operations.",
+        "Edit files using literal text replacement (finds exact text matches, NOT regex patterns). Supports replace, insert_before, insert_after, and delete operations.",
         patch_schema()
     );
 }
