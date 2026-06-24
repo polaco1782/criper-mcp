@@ -68,6 +68,7 @@ void debug_log(bool enabled, const std::string& message);
 [[nodiscard]] json make_tool_result(json structured);
 [[nodiscard]] json make_tool_error(std::string message);
 [[nodiscard]] json make_stat_object(const fs::path& root_path, const fs::path& path);
+[[nodiscard]] bool is_default_ignored_directory(const fs::directory_entry& entry);
 
 [[nodiscard]] std::string lowercase_copy(std::string_view text);
 [[nodiscard]] bool text_matches_pattern(

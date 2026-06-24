@@ -407,6 +407,15 @@ json make_stat_object(const fs::path& root_path, const fs::path& path) {
     return entry;
 }
 
+bool is_default_ignored_directory(const fs::directory_entry& entry) {
+    if (!entry.is_directory()) {
+        return false;
+    }
+
+    const std::string name = entry.path().filename().generic_string();
+    return name == ".git" || name == ".hg" || name == ".svn";
+}
+
 std::string lowercase_copy(const std::string_view text) {
     std::string lowered(text);
     std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char character) {

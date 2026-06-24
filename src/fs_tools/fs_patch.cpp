@@ -131,6 +131,10 @@ json call_fs_patch(const FileToolsContext& context, const json& arguments) {
             throw ToolError("unsupported patch operation: " + type);
         }
 
+        if (matches == 0U) {
+            throw ToolError("patch operation did not match any text for operation: " + type);
+        }
+
         applied.push_back({
             {"type", type},
             {"matches", static_cast<std::uint64_t>(matches)},

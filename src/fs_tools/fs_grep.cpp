@@ -228,9 +228,14 @@ json call_fs_grep(const FileToolsContext& context, const json& arguments) {
     if (fs::is_regular_file(path)) {
         search_file(path, matches, count);
     } else if (fs::is_directory(path)) {
-        for (const auto& entry : fs::recursive_directory_iterator(path)) {
+        for (fs::recursive_directory_iterator it(path), end; it != end; ++it) {
+            const auto& entry = *it;
             if (count >= max_results) {
                 break;
+            }
+            if (is_default_ignored_directory(entry)) {
+                it.disable_recursion_pending();
+                continue;
             }
             if (!entry.is_regular_file()) {
                 continue;

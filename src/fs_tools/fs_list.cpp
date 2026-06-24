@@ -43,7 +43,12 @@ json call_fs_list(const FileToolsContext& context, const json& arguments) {
     };
 
     if (recursive) {
-        for (const auto& entry : fs::recursive_directory_iterator(path)) {
+        for (fs::recursive_directory_iterator it(path), end; it != end; ++it) {
+            const auto& entry = *it;
+            if (is_default_ignored_directory(entry)) {
+                it.disable_recursion_pending();
+                continue;
+            }
             if (!push_entry(entry)) {
                 break;
             }
