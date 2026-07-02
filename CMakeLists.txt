@@ -47,3 +47,31 @@ target_compile_options(criper-mcp
         -Wextra
         -Wpedantic
 )
+
+enable_testing()
+
+add_executable(fs-patch-tests
+    tests/fs_patch_tests.cpp
+    src/fs_tools/support.cpp
+    src/fs_tools/fs_patch.cpp
+)
+
+target_include_directories(fs-patch-tests
+    PRIVATE
+        include
+        third_party
+)
+
+target_link_libraries(fs-patch-tests
+    PRIVATE
+        Threads::Threads
+)
+
+target_compile_options(fs-patch-tests
+    PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+add_test(NAME fs-patch-tests COMMAND fs-patch-tests)

@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /workspaces/criper-mcp
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
+	/usr/bin/ctest --force-new-ctest-process $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "No interactive CMake dialog available..."
@@ -128,6 +138,19 @@ criper-mcp: cmake_check_build_system
 criper-mcp/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/criper-mcp.dir/build.make CMakeFiles/criper-mcp.dir/build
 .PHONY : criper-mcp/fast
+
+#=============================================================================
+# Target rules for targets named fs-patch-tests
+
+# Build rule for target.
+fs-patch-tests: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 fs-patch-tests
+.PHONY : fs-patch-tests
+
+# fast build rule for target.
+fs-patch-tests/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fs-patch-tests.dir/build.make CMakeFiles/fs-patch-tests.dir/build
+.PHONY : fs-patch-tests/fast
 
 src/fs_tools/dispatcher.o: src/fs_tools/dispatcher.cpp.o
 .PHONY : src/fs_tools/dispatcher.o
@@ -351,6 +374,7 @@ src/fs_tools/fs_patch.o: src/fs_tools/fs_patch.cpp.o
 # target to build an object file
 src/fs_tools/fs_patch.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/criper-mcp.dir/build.make CMakeFiles/criper-mcp.dir/src/fs_tools/fs_patch.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fs-patch-tests.dir/build.make CMakeFiles/fs-patch-tests.dir/src/fs_tools/fs_patch.cpp.o
 .PHONY : src/fs_tools/fs_patch.cpp.o
 
 src/fs_tools/fs_patch.i: src/fs_tools/fs_patch.cpp.i
@@ -359,6 +383,7 @@ src/fs_tools/fs_patch.i: src/fs_tools/fs_patch.cpp.i
 # target to preprocess a source file
 src/fs_tools/fs_patch.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/criper-mcp.dir/build.make CMakeFiles/criper-mcp.dir/src/fs_tools/fs_patch.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fs-patch-tests.dir/build.make CMakeFiles/fs-patch-tests.dir/src/fs_tools/fs_patch.cpp.i
 .PHONY : src/fs_tools/fs_patch.cpp.i
 
 src/fs_tools/fs_patch.s: src/fs_tools/fs_patch.cpp.s
@@ -367,6 +392,7 @@ src/fs_tools/fs_patch.s: src/fs_tools/fs_patch.cpp.s
 # target to generate assembly for a file
 src/fs_tools/fs_patch.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/criper-mcp.dir/build.make CMakeFiles/criper-mcp.dir/src/fs_tools/fs_patch.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fs-patch-tests.dir/build.make CMakeFiles/fs-patch-tests.dir/src/fs_tools/fs_patch.cpp.s
 .PHONY : src/fs_tools/fs_patch.cpp.s
 
 src/fs_tools/fs_read.o: src/fs_tools/fs_read.cpp.o
@@ -495,6 +521,7 @@ src/fs_tools/support.o: src/fs_tools/support.cpp.o
 # target to build an object file
 src/fs_tools/support.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/criper-mcp.dir/build.make CMakeFiles/criper-mcp.dir/src/fs_tools/support.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fs-patch-tests.dir/build.make CMakeFiles/fs-patch-tests.dir/src/fs_tools/support.cpp.o
 .PHONY : src/fs_tools/support.cpp.o
 
 src/fs_tools/support.i: src/fs_tools/support.cpp.i
@@ -503,6 +530,7 @@ src/fs_tools/support.i: src/fs_tools/support.cpp.i
 # target to preprocess a source file
 src/fs_tools/support.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/criper-mcp.dir/build.make CMakeFiles/criper-mcp.dir/src/fs_tools/support.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fs-patch-tests.dir/build.make CMakeFiles/fs-patch-tests.dir/src/fs_tools/support.cpp.i
 .PHONY : src/fs_tools/support.cpp.i
 
 src/fs_tools/support.s: src/fs_tools/support.cpp.s
@@ -511,6 +539,7 @@ src/fs_tools/support.s: src/fs_tools/support.cpp.s
 # target to generate assembly for a file
 src/fs_tools/support.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/criper-mcp.dir/build.make CMakeFiles/criper-mcp.dir/src/fs_tools/support.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fs-patch-tests.dir/build.make CMakeFiles/fs-patch-tests.dir/src/fs_tools/support.cpp.s
 .PHONY : src/fs_tools/support.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -609,6 +638,30 @@ src/sandbox_setup.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/criper-mcp.dir/build.make CMakeFiles/criper-mcp.dir/src/sandbox_setup.cpp.s
 .PHONY : src/sandbox_setup.cpp.s
 
+tests/fs_patch_tests.o: tests/fs_patch_tests.cpp.o
+.PHONY : tests/fs_patch_tests.o
+
+# target to build an object file
+tests/fs_patch_tests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fs-patch-tests.dir/build.make CMakeFiles/fs-patch-tests.dir/tests/fs_patch_tests.cpp.o
+.PHONY : tests/fs_patch_tests.cpp.o
+
+tests/fs_patch_tests.i: tests/fs_patch_tests.cpp.i
+.PHONY : tests/fs_patch_tests.i
+
+# target to preprocess a source file
+tests/fs_patch_tests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fs-patch-tests.dir/build.make CMakeFiles/fs-patch-tests.dir/tests/fs_patch_tests.cpp.i
+.PHONY : tests/fs_patch_tests.cpp.i
+
+tests/fs_patch_tests.s: tests/fs_patch_tests.cpp.s
+.PHONY : tests/fs_patch_tests.s
+
+# target to generate assembly for a file
+tests/fs_patch_tests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fs-patch-tests.dir/build.make CMakeFiles/fs-patch-tests.dir/tests/fs_patch_tests.cpp.s
+.PHONY : tests/fs_patch_tests.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -617,7 +670,9 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... test"
 	@echo "... criper-mcp"
+	@echo "... fs-patch-tests"
 	@echo "... src/fs_tools/dispatcher.o"
 	@echo "... src/fs_tools/dispatcher.i"
 	@echo "... src/fs_tools/dispatcher.s"
@@ -678,6 +733,9 @@ help:
 	@echo "... src/sandbox_setup.o"
 	@echo "... src/sandbox_setup.i"
 	@echo "... src/sandbox_setup.s"
+	@echo "... tests/fs_patch_tests.o"
+	@echo "... tests/fs_patch_tests.i"
+	@echo "... tests/fs_patch_tests.s"
 .PHONY : help
 
 

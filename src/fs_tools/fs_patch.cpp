@@ -142,8 +142,28 @@ json call_fs_patch(const FileToolsContext& context, const json& arguments) {
     }
 
     std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    if (!output) {
+        throw ToolError("failed to open file for writing");
+    }
     output.write(content.data(), static_cast<std::streamsize>(content.size()));
     output.flush();
+    if (!output) {
+        throw ToolError("failed to write patched file");
+    }
+    output.close();
+    if (!output) {
+        throw ToolError("failed to close patched file");
+    }
+
+    std::ifstream verification_input(path, std::ios::binary);
+    if (!verification_input) {
+        throw ToolError("failed to open patched file for verification");
+    }
+    std::ostringstream verification_buffer;
+    verification_buffer << verification_input.rdbuf();
+    if (verification_buffer.str() != content) {
+        throw ToolError("patched file verification failed");
+    }
 
     return json{
         {"path", relative_string(context.root_path(), path)},

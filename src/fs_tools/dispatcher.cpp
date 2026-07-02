@@ -83,7 +83,13 @@ json FileTools::call(const std::string& tool_name, const json& arguments) const 
                     const int exit_code = result["structuredContent"].value("exit_code", -1);
                     status = exit_code == 0 ? "succeeded" : "failed";
                 } else if (tool_name == "fs_patch") {
-                    const std::uint64_t matches = result["structuredContent"].value("matches", static_cast<std::uint64_t>(0));
+                    std::uint64_t matches = 0;
+                    const auto& operations = result["structuredContent"].value("operations", json::array());
+                    if (operations.is_array()) {
+                        for (const auto& operation : operations) {
+                            matches += operation.value("matches", static_cast<std::uint64_t>(0));
+                        }
+                    }
                     status = matches == 0 ? "no_matches" : "matched";
                 }
             }
