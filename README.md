@@ -30,8 +30,9 @@ The server relies on two excellent single-header libraries:
 
 - [`cpp-httplib`](https://github.com/yhirose/cpp-httplib) by `yhirose` for the HTTP server
 - [`json.hpp` / nlohmann::json`](https://github.com/nlohmann/json) by `nlohmann` for JSON parsing and serialization
+- [`libgit2`](https://libgit2.org/) for embedded git operations without requiring a host `git` executable
 
-These headers are vendored locally under `third_party/`.
+These dependencies are vendored locally under `third_party/`.
 
 ## Installation
 
@@ -181,6 +182,8 @@ The server currently exposes these MCP tools:
   Move or rename files or directories
 - `fs_remove`
   Remove files or directories
+- `git`
+  Run git repository operations through embedded libgit2
 
 ## Repository Layout
 

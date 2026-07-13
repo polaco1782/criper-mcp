@@ -46,4 +46,8 @@ namespace criper {
 [[nodiscard]] json make_fs_remove_spec();
 [[nodiscard]] json call_fs_remove(const FileToolsContext& context, const json& arguments);
 
+[[nodiscard]] json make_git_spec();
+[[nodiscard]] json call_git(const FileToolsContext& context, const json& arguments);
+[[nodiscard]] json redact_git_arguments(json arguments);
+
 } // namespace criper

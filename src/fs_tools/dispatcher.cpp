@@ -4,6 +4,17 @@
 
 namespace criper {
 
+namespace {
+
+[[nodiscard]] json arguments_for_log(const std::string& tool_name, const json& arguments) {
+    if (tool_name == "git") {
+        return redact_git_arguments(arguments);
+    }
+    return arguments;
+}
+
+} // namespace
+
 FileTools::FileTools(std::filesystem::path root_path, const bool debug_enabled, const bool verbose_enabled)
     : context_(std::move(root_path), debug_enabled, verbose_enabled) {
 }
@@ -24,13 +35,14 @@ json FileTools::list_tools() const {
         make_fs_copy_spec(),
         make_fs_move_spec(),
         make_fs_remove_spec(),
+        make_git_spec(),
     });
 }
 
 json FileTools::call(const std::string& tool_name, const json& arguments) const {
     debug_log(
         context_.debug_enabled(),
-        "tools/call name=" + tool_name + " arguments=" + truncate_for_log(arguments.dump())
+        "tools/call name=" + tool_name + " arguments=" + truncate_for_log(arguments_for_log(tool_name, arguments).dump())
     );
 
     try {
@@ -63,6 +75,8 @@ json FileTools::call(const std::string& tool_name, const json& arguments) const 
             result = make_tool_result(call_fs_move(context_, arguments));
         } else if (tool_name == "fs_remove") {
             result = make_tool_result(call_fs_remove(context_, arguments));
+        } else if (tool_name == "git") {
+            result = make_tool_result(call_git(context_, arguments));
         } else {
             result = make_tool_error("unknown tool: " + tool_name);
         }
