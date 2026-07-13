@@ -339,4 +339,12 @@ bool Sandbox::activate() {
 #endif
 }
 
+bool Sandbox::active() const noexcept {
+    return active_;
+}
+
+const std::filesystem::path& Sandbox::root_directory() const noexcept {
+    return root_directory_;
+}
+
 } // namespace criper

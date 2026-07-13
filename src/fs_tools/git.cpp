@@ -1,12 +1,15 @@
 #include "criper/fs_tool_registry.hpp"
+#include "criper/sandbox.hpp"
 
 #include <git2.h>
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <system_error>
 
 namespace criper {
 
@@ -43,6 +46,67 @@ void check_git(const int result, const std::string_view action) {
     if (result < 0) {
         throw ToolError(std::string(action) + ": " + last_git_error());
     }
+}
+
+void configure_libgit2_sandbox_paths(const FileToolsContext& context) {
+    ensure_libgit2_initialized();
+
+    const Sandbox& sandbox = Sandbox::instance();
+    if (!sandbox.active()) {
+        return;
+    }
+
+    const fs::path root = sandbox.root_directory().empty() ? context.root_path() : sandbox.root_directory();
+    const fs::path base = root / ".criper-mcp" / "libgit2";
+    const fs::path home = base / "home";
+    const fs::path ssh = home / ".ssh";
+    const fs::path system = base / "system";
+    const fs::path xdg = base / "xdg";
+    const fs::path programdata = base / "programdata";
+    const fs::path templates = base / "templates";
+    const fs::path certs = base / "certs";
+
+    std::error_code error;
+    fs::create_directories(home, error);
+    if (error) {
+        throw ToolError("prepare sandboxed libgit2 home: " + error.message());
+    }
+    fs::create_directories(ssh, error);
+    if (error) {
+        throw ToolError("prepare sandboxed libgit2 ssh path: " + error.message());
+    }
+    fs::create_directories(system, error);
+    if (error) {
+        throw ToolError("prepare sandboxed libgit2 system config path: " + error.message());
+    }
+    fs::create_directories(xdg, error);
+    if (error) {
+        throw ToolError("prepare sandboxed libgit2 xdg config path: " + error.message());
+    }
+    fs::create_directories(programdata, error);
+    if (error) {
+        throw ToolError("prepare sandboxed libgit2 programdata config path: " + error.message());
+    }
+    fs::create_directories(templates, error);
+    if (error) {
+        throw ToolError("prepare sandboxed libgit2 template path: " + error.message());
+    }
+    fs::create_directories(certs, error);
+    if (error) {
+        throw ToolError("prepare sandboxed libgit2 certificate path: " + error.message());
+    }
+
+    check_git(git_libgit2_opts(GIT_OPT_SET_HOMEDIR, home.string().c_str()), "sandbox libgit2 home");
+    check_git(git_libgit2_opts(GIT_OPT_SET_SEARCH_PATH, GIT_CONFIG_LEVEL_GLOBAL, home.string().c_str()), "sandbox libgit2 global config");
+    check_git(git_libgit2_opts(GIT_OPT_SET_SEARCH_PATH, GIT_CONFIG_LEVEL_SYSTEM, system.string().c_str()), "sandbox libgit2 system config");
+    check_git(git_libgit2_opts(GIT_OPT_SET_SEARCH_PATH, GIT_CONFIG_LEVEL_XDG, xdg.string().c_str()), "sandbox libgit2 xdg config");
+    check_git(
+        git_libgit2_opts(GIT_OPT_SET_SEARCH_PATH, GIT_CONFIG_LEVEL_PROGRAMDATA, programdata.string().c_str()),
+        "sandbox libgit2 programdata config"
+    );
+    check_git(git_libgit2_opts(GIT_OPT_SET_TEMPLATE_PATH, templates.string().c_str()), "sandbox libgit2 template path");
+    check_git(git_libgit2_opts(GIT_OPT_SET_SSL_CERT_LOCATIONS, nullptr, certs.string().c_str()), "sandbox libgit2 certificate path");
+    check_git(git_libgit2_opts(GIT_OPT_SET_OWNER_VALIDATION, 0), "sandbox libgit2 owner validation");
 }
 
 [[nodiscard]] json git_schema() {
@@ -739,6 +803,8 @@ json redact_git_arguments(json arguments) {
 }
 
 json call_git(const FileToolsContext& context, const json& arguments) {
+    configure_libgit2_sandbox_paths(context);
+
     const std::string op = require_string(arguments, "op");
 
     if (op == "init") return call_git_init(context, arguments);

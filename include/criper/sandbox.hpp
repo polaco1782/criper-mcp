@@ -21,6 +21,8 @@ public:
 
     bool initialize(const std::filesystem::path& root_directory, SandboxMode mode);
     [[nodiscard]] bool activate();
+    [[nodiscard]] bool active() const noexcept;
+    [[nodiscard]] const std::filesystem::path& root_directory() const noexcept;
 
 private:
     Sandbox();

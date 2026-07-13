@@ -1,6 +1,7 @@
 build/
 build-static/
 _deps/
+.criper-mcp/
 CMakeFiles/
 CMakeCache.txt
 CPackConfig.cmake

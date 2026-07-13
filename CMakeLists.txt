@@ -137,6 +137,7 @@ add_executable(git-tool-tests
     tests/git_tool_tests.cpp
     src/fs_tools/support.cpp
     src/fs_tools/git.cpp
+    src/sandbox.cpp
 )
 
 target_include_directories(git-tool-tests
