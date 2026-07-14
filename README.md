@@ -185,6 +185,45 @@ The server currently exposes these MCP tools:
 - `git`
   Run git repository operations through embedded libgit2
 
+### Git Tool Credentials
+
+The `git` tool accepts one operation through the `op` field. Remote operations
+(`clone`, `fetch`, `pull`, and `push`) can receive per-call credentials:
+
+```json
+{
+  "op": "clone",
+  "url": "git@github.com:owner/repo.git",
+  "path": "repo",
+  "credentials": {
+    "username": "git",
+    "ssh_private_key_path": "keys/id_ed25519",
+    "ssh_public_key_path": "keys/id_ed25519.pub",
+    "ssh_passphrase": "optional-passphrase"
+  }
+}
+```
+
+For SSH agent auth, use `"use_ssh_agent": true`. For HTTPS, use
+`"username"` plus `"password"` or `"token"`. Credential fields are never
+persisted and are redacted from debug logs.
+
+For local repository fan-out, use `worktree_add` instead of cloning. `path`
+points at the existing source repository and `worktree_path` points at the new
+linked checkout:
+
+```json
+{
+  "op": "worktree_add",
+  "path": "dwcore",
+  "worktree_path": "workspaces/dwcore-task",
+  "branch": "dwcore-task"
+}
+```
+
+Use `worktree_list` with `path` set to the source repository to inspect linked
+worktrees.
+
 ## Repository Layout
 
 - [src/main.cpp](/home/cmartin/Projects/criper/src/main.cpp)

@@ -50,6 +50,15 @@ void write_file(const fs::path& path, const std::string& content) {
     require(static_cast<bool>(stream), "failed to write test file: " + path.string());
 }
 
+bool array_contains_string(const json& array, const std::string& expected) {
+    for (const json& value : array) {
+        if (value.is_string() && value.get<std::string>() == expected) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void init_add_commit_and_log(const FileToolsContext& context, const fs::path& root) {
     const json init = criper::call_git(context, {{"op", "init"}, {"path", "repo"}});
     require(init.value("path", "") == "repo", "init should return relative repo path");
@@ -100,6 +109,29 @@ void branch_checkout_reset_guards(const FileToolsContext& context, const fs::pat
     require(hard_reset_blocked, "hard reset should require force=true");
 }
 
+void worktree_add_and_list(const FileToolsContext& context) {
+    const json add = criper::call_git(context, {
+        {"op", "worktree_add"},
+        {"path", "repo"},
+        {"worktree_path", "repo-feature"},
+        {"branch", "feature-worktree"},
+    });
+    require(add.value("path", "") == "repo-feature", "worktree_add should return relative worktree path");
+    require(add.value("branch", "") == "feature-worktree", "worktree_add should return branch name");
+
+    const json head = criper::call_git(context, {{"op", "head"}, {"path", "repo-feature"}});
+    require(head.value("shorthand", "") == "feature-worktree", "worktree should check out requested branch");
+
+    const json list = criper::call_git(context, {{"op", "worktree_list"}, {"path", "repo"}});
+    require(list["worktrees"].is_array(), "worktree_list should return an array");
+
+    bool found = false;
+    for (const json& worktree : list["worktrees"]) {
+        found = found || worktree.value("path", "") == "repo-feature";
+    }
+    require(found, "worktree_list should include created worktree");
+}
+
 void path_containment_is_enforced(const FileToolsContext& context) {
     bool blocked = false;
     try {
@@ -125,6 +157,31 @@ void redacts_credentials() {
     require(redacted["credentials"].get<std::string>() == "[redacted]", "credentials object should be redacted");
 }
 
+void schema_exposes_git_parameters() {
+    const json spec = criper::make_git_spec();
+    const json& properties = spec.at("inputSchema").at("properties");
+    const json& credentials = properties.at("credentials");
+    const json& credential_properties = credentials.at("properties");
+
+    require(properties.at("op").at("enum").is_array(), "git schema should expose supported ops");
+    require(array_contains_string(properties.at("op").at("enum"), "worktree_add"), "git schema should expose worktree_add");
+    require(array_contains_string(properties.at("op").at("enum"), "worktree_list"), "git schema should expose worktree_list");
+    require(properties.at("mode").at("enum").is_array(), "git schema should expose reset modes");
+    require(properties.contains("refspecs"), "git schema should expose refspecs");
+    require(properties.contains("force"), "git schema should expose force");
+    require(properties.contains("worktree_path"), "git schema should expose worktree_path");
+    require(properties.contains("checkout_existing"), "git schema should expose checkout_existing");
+    require(properties.contains("lock"), "git schema should expose lock");
+    require(credentials.value("additionalProperties", true) == false, "credential schema should reject unknown fields");
+    require(credential_properties.contains("username"), "credential schema should expose username");
+    require(credential_properties.contains("password"), "credential schema should expose password");
+    require(credential_properties.contains("token"), "credential schema should expose token");
+    require(credential_properties.contains("use_ssh_agent"), "credential schema should expose use_ssh_agent");
+    require(credential_properties.contains("ssh_public_key_path"), "credential schema should expose ssh_public_key_path");
+    require(credential_properties.contains("ssh_private_key_path"), "credential schema should expose ssh_private_key_path");
+    require(credential_properties.contains("ssh_passphrase"), "credential schema should expose ssh_passphrase");
+}
+
 } // namespace
 
 int main() {
@@ -132,9 +189,11 @@ int main() {
         TempDir temp_dir;
         const FileToolsContext context(temp_dir.path(), false, false);
         init_add_commit_and_log(context, temp_dir.path());
+        worktree_add_and_list(context);
         branch_checkout_reset_guards(context, temp_dir.path());
         path_containment_is_enforced(context);
         redacts_credentials();
+        schema_exposes_git_parameters();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return EXIT_FAILURE;

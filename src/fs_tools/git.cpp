@@ -111,27 +111,168 @@ void configure_libgit2_sandbox_paths(const FileToolsContext& context) {
 
 [[nodiscard]] json git_schema() {
     json schema = base_schema();
+    const json credentials_schema = {
+        {"type", "object"},
+        {"additionalProperties", false},
+        {"description", "Per-call credentials for clone, fetch, pull, and push. Credentials are not persisted."},
+        {"properties", {
+            {"username", {
+                {"type", "string"},
+                {"description", "Username for HTTPS auth or SSH auth. Defaults to username from URL, or git for SSH."},
+            }},
+            {"password", {
+                {"type", "string"},
+                {"description", "HTTPS password or personal access token secret."},
+            }},
+            {"token", {
+                {"type", "string"},
+                {"description", "HTTPS token. Used as the secret with username x-access-token when username is omitted."},
+            }},
+            {"use_ssh_agent", {
+                {"type", "boolean"},
+                {"description", "Use the local SSH agent for SSH authentication."},
+                {"default", false},
+            }},
+            {"ssh_public_key_path", {
+                {"type", "string"},
+                {"description", "Path to the SSH public key, relative to the MCP root. Optional when libssh2 can derive it."},
+            }},
+            {"ssh_private_key_path", {
+                {"type", "string"},
+                {"description", "Path to the SSH private key, relative to the MCP root."},
+            }},
+            {"ssh_passphrase", {
+                {"type", "string"},
+                {"description", "Passphrase for the SSH private key."},
+            }},
+        }},
+    };
+
     schema["properties"] = {
-        {"op", {{"type", "string"}}},
-        {"path", {{"type", "string"}}},
-        {"url", {{"type", "string"}}},
-        {"remote", {{"type", "string"}}},
-        {"ref", {{"type", "string"}}},
-        {"branch", {{"type", "string"}}},
-        {"name", {{"type", "string"}}},
-        {"message", {{"type", "string"}}},
-        {"author_name", {{"type", "string"}}},
-        {"author_email", {{"type", "string"}}},
-        {"committer_name", {{"type", "string"}}},
-        {"committer_email", {{"type", "string"}}},
-        {"mode", {{"type", "string"}}},
-        {"staged", {{"type", "boolean"}}},
-        {"force", {{"type", "boolean"}}},
-        {"bare", {{"type", "boolean"}}},
-        {"paths", {{"type", "array"}, {"items", {{"type", "string"}}}}},
-        {"refspecs", {{"type", "array"}, {"items", {{"type", "string"}}}}},
-        {"max_count", {{"type", "integer"}, {"minimum", 1}}},
-        {"credentials", {{"type", "object"}}},
+        {"op", {
+            {"type", "string"},
+            {"description", "Git operation to run."},
+            {"enum", json::array({
+                "status",
+                "diff",
+                "log",
+                "head",
+                "branches",
+                "remotes",
+                "init",
+                "add",
+                "commit",
+                "checkout",
+                "branch_create",
+                "branch_delete",
+                "reset",
+                "merge",
+                "clone",
+                "fetch",
+                "pull",
+                "push",
+                "worktree_add",
+                "worktree_list",
+            })},
+        }},
+        {"path", {
+            {"type", "string"},
+            {"description", "Repository path relative to the MCP root. Defaults to ."},
+            {"default", "."},
+        }},
+        {"url", {
+            {"type", "string"},
+            {"description", "Remote repository URL. Required for clone."},
+        }},
+        {"remote", {
+            {"type", "string"},
+            {"description", "Remote name for fetch, pull, or push. Defaults to origin."},
+            {"default", "origin"},
+        }},
+        {"ref", {
+            {"type", "string"},
+            {"description", "Revision, commit, tag, or ref name for checkout, branch_create, or reset. Defaults vary by operation."},
+        }},
+        {"branch", {
+            {"type", "string"},
+            {"description", "Branch name for checkout, clone checkout branch, merge source branch, or new worktree branch."},
+        }},
+        {"name", {
+            {"type", "string"},
+            {"description", "Branch name for branch_create or branch_delete, or worktree administrative name."},
+        }},
+        {"worktree_path", {
+            {"type", "string"},
+            {"description", "Target path for worktree_add, relative to the MCP root."},
+        }},
+        {"message", {
+            {"type", "string"},
+            {"description", "Commit message. Required for commit."},
+        }},
+        {"author_name", {
+            {"type", "string"},
+            {"description", "Commit author name. Defaults to criper-mcp."},
+        }},
+        {"author_email", {
+            {"type", "string"},
+            {"description", "Commit author email. Defaults to criper-mcp@example.invalid."},
+        }},
+        {"committer_name", {
+            {"type", "string"},
+            {"description", "Commit committer name. Defaults to criper-mcp."},
+        }},
+        {"committer_email", {
+            {"type", "string"},
+            {"description", "Commit committer email. Defaults to criper-mcp@example.invalid."},
+        }},
+        {"mode", {
+            {"type", "string"},
+            {"description", "Reset mode for reset."},
+            {"enum", json::array({"soft", "mixed", "hard"})},
+            {"default", "mixed"},
+        }},
+        {"staged", {
+            {"type", "boolean"},
+            {"description", "For diff, show staged changes instead of worktree changes."},
+            {"default", false},
+        }},
+        {"force", {
+            {"type", "boolean"},
+            {"description", "Required for destructive variants: hard reset, force checkout, branch_delete, and force push refspecs."},
+            {"default", false},
+        }},
+        {"checkout_existing", {
+            {"type", "boolean"},
+            {"description", "For worktree_add, allow checking out an existing local branch that matches the worktree name."},
+            {"default", false},
+        }},
+        {"lock", {
+            {"type", "boolean"},
+            {"description", "For worktree_add, lock the newly-created worktree."},
+            {"default", false},
+        }},
+        {"bare", {
+            {"type", "boolean"},
+            {"description", "Create a bare repository for init or clone."},
+            {"default", false},
+        }},
+        {"paths", {
+            {"type", "array"},
+            {"description", "Pathspecs for add. Defaults to [\".\"]."},
+            {"items", {{"type", "string"}}},
+        }},
+        {"refspecs", {
+            {"type", "array"},
+            {"description", "Refspecs for fetch or push. Push requires at least one refspec."},
+            {"items", {{"type", "string"}}},
+        }},
+        {"max_count", {
+            {"type", "integer"},
+            {"description", "Maximum commits to return from log."},
+            {"minimum", 1},
+            {"default", 20},
+        }},
+        {"credentials", credentials_schema},
     };
     schema["required"] = json::array({"op"});
     return schema;
@@ -767,6 +908,107 @@ int diff_line_cb(const git_diff_delta*, const git_diff_hunk*, const git_diff_lin
     return json{{"updated", true}, {"strategy", "merge"}};
 }
 
+[[nodiscard]] std::string worktree_default_name(const fs::path& path) {
+    const fs::path filename = path.filename();
+    if (!filename.empty()) {
+        return filename.string();
+    }
+
+    const fs::path parent_filename = path.parent_path().filename();
+    if (!parent_filename.empty()) {
+        return parent_filename.string();
+    }
+
+    throw ToolError("worktree_path must include a directory name");
+}
+
+[[nodiscard]] git_ptr<git_reference, git_reference_free> branch_ref_for_worktree(
+    git_repository* repository,
+    const json& arguments,
+    const std::string& worktree_name
+) {
+    const bool has_branch = arguments.contains("branch");
+    const bool has_ref = arguments.contains("ref");
+    if (!has_branch && !has_ref) {
+        return {nullptr, git_reference_free};
+    }
+
+    const std::string branch_name = has_branch ? require_string(arguments, "branch") : worktree_name;
+    git_reference* raw_branch = nullptr;
+    const int branch_result = git_branch_lookup(&raw_branch, repository, branch_name.c_str(), GIT_BRANCH_LOCAL);
+    if (branch_result == 0) {
+        return {raw_branch, git_reference_free};
+    }
+    if (branch_result != GIT_ENOTFOUND) {
+        check_git(branch_result, "lookup worktree branch");
+    }
+
+    const std::string start_point = optional_string(arguments, "ref", "HEAD");
+    git_object* raw_target = nullptr;
+    check_git(git_revparse_single(&raw_target, repository, start_point.c_str()), "lookup worktree start point");
+    git_ptr<git_object, git_object_free> target(raw_target, git_object_free);
+    if (git_object_type(target.get()) != GIT_OBJECT_COMMIT) {
+        throw ToolError("worktree start point must resolve to a commit");
+    }
+
+    check_git(git_branch_create(
+        &raw_branch,
+        repository,
+        branch_name.c_str(),
+        reinterpret_cast<git_commit*>(target.get()),
+        0
+    ), "create worktree branch");
+    return {raw_branch, git_reference_free};
+}
+
+[[nodiscard]] json call_git_worktree_add(const FileToolsContext& context, const json& arguments) {
+    auto repository = open_repository(context, arguments);
+    const fs::path worktree_path = context.resolve_path(require_string(arguments, "worktree_path"), false);
+    const std::string name = optional_string(arguments, "name", worktree_default_name(worktree_path));
+    auto branch_ref = branch_ref_for_worktree(repository.get(), arguments, name);
+
+    git_worktree_add_options options = GIT_WORKTREE_ADD_OPTIONS_INIT;
+    options.lock = optional_bool(arguments, "lock", false) ? 1 : 0;
+    options.checkout_existing = optional_bool(arguments, "checkout_existing", false) ? 1 : 0;
+    options.ref = branch_ref.get();
+
+    git_worktree* raw = nullptr;
+    check_git(
+        git_worktree_add(&raw, repository.get(), name.c_str(), worktree_path.string().c_str(), &options),
+        "add worktree"
+    );
+    git_ptr<git_worktree, git_worktree_free> worktree(raw, git_worktree_free);
+
+    return json{
+        {"name", git_worktree_name(worktree.get()) != nullptr ? git_worktree_name(worktree.get()) : name},
+        {"path", relative_string(context.root_path(), worktree_path)},
+        {"branch", branch_ref ? git_reference_shorthand(branch_ref.get()) : name},
+        {"locked", optional_bool(arguments, "lock", false)},
+    };
+}
+
+[[nodiscard]] json call_git_worktree_list(const FileToolsContext& context, const json& arguments) {
+    auto repository = open_repository(context, arguments);
+    git_strarray names{};
+    check_git(git_worktree_list(&names, repository.get()), "list worktrees");
+
+    json entries = json::array();
+    for (std::size_t index = 0; index < names.count; ++index) {
+        git_worktree* raw = nullptr;
+        check_git(git_worktree_lookup(&raw, repository.get(), names.strings[index]), "lookup worktree");
+        git_ptr<git_worktree, git_worktree_free> worktree(raw, git_worktree_free);
+        const char* path = git_worktree_path(worktree.get());
+        entries.push_back({
+            {"name", git_worktree_name(worktree.get()) != nullptr ? git_worktree_name(worktree.get()) : names.strings[index]},
+            {"path", path != nullptr ? relative_string(context.root_path(), path) : ""},
+            {"valid", git_worktree_validate(worktree.get()) == 0},
+        });
+    }
+
+    git_strarray_dispose(&names);
+    return json{{"worktrees", std::move(entries)}};
+}
+
 void redact_object(json& object) {
     static constexpr std::array<std::string_view, 7U> keys = {
         "credentials",
@@ -825,6 +1067,8 @@ json call_git(const FileToolsContext& context, const json& arguments) {
     if (op == "fetch") return call_git_fetch(context, arguments);
     if (op == "pull") return call_git_pull(context, arguments);
     if (op == "push") return call_git_push(context, arguments);
+    if (op == "worktree_add") return call_git_worktree_add(context, arguments);
+    if (op == "worktree_list") return call_git_worktree_list(context, arguments);
 
     throw ToolError("unsupported git operation: " + op);
 }
