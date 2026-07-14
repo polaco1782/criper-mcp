@@ -7,6 +7,7 @@
 #include <array>
 #include <filesystem>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -31,6 +32,11 @@ struct Libgit2Runtime {
 void ensure_libgit2_initialized() {
     static Libgit2Runtime runtime;
     (void)runtime;
+}
+
+std::mutex& worktree_add_mutex() {
+    static std::mutex mutex;
+    return mutex;
 }
 
 [[nodiscard]] std::string last_git_error() {
@@ -962,6 +968,8 @@ int diff_line_cb(const git_diff_delta*, const git_diff_hunk*, const git_diff_lin
 }
 
 [[nodiscard]] json call_git_worktree_add(const FileToolsContext& context, const json& arguments) {
+    std::scoped_lock lock(worktree_add_mutex());
+
     auto repository = open_repository(context, arguments);
     const fs::path worktree_path = context.resolve_path(require_string(arguments, "worktree_path"), false);
     const std::string name = optional_string(arguments, "name", worktree_default_name(worktree_path));

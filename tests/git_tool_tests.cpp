@@ -8,6 +8,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
+#include <vector>
 
 namespace {
 
@@ -50,6 +52,10 @@ void write_file(const fs::path& path, const std::string& content) {
     require(static_cast<bool>(stream), "failed to write test file: " + path.string());
 }
 
+void call_git_no_result(const FileToolsContext& context, const json& arguments) {
+    (void)criper::call_git(context, arguments);
+}
+
 bool array_contains_string(const json& array, const std::string& expected) {
     for (const json& value : array) {
         if (value.is_string() && value.get<std::string>() == expected) {
@@ -69,7 +75,7 @@ void init_add_commit_and_log(const FileToolsContext& context, const fs::path& ro
     const json status = criper::call_git(context, {{"op", "status"}, {"path", "repo"}});
     require(!status.value("clean", true), "new file should make status dirty");
 
-    criper::call_git(context, {{"op", "add"}, {"path", "repo"}, {"paths", json::array({"sample.txt"})}});
+    call_git_no_result(context, {{"op", "add"}, {"path", "repo"}, {"paths", json::array({"sample.txt"})}});
     const json commit = criper::call_git(context, {
         {"op", "commit"},
         {"path", "repo"},
@@ -85,24 +91,24 @@ void init_add_commit_and_log(const FileToolsContext& context, const fs::path& ro
 }
 
 void branch_checkout_reset_guards(const FileToolsContext& context, const fs::path& root) {
-    criper::call_git(context, {{"op", "branch_create"}, {"path", "repo"}, {"name", "feature"}});
+    call_git_no_result(context, {{"op", "branch_create"}, {"path", "repo"}, {"name", "feature"}});
     const json branches = criper::call_git(context, {{"op", "branches"}, {"path", "repo"}});
     require(branches["branches"].is_array() && branches["branches"].size() >= 2U, "branches should include feature branch");
 
     bool delete_blocked = false;
     try {
-        criper::call_git(context, {{"op", "branch_delete"}, {"path", "repo"}, {"name", "feature"}});
+        call_git_no_result(context, {{"op", "branch_delete"}, {"path", "repo"}, {"name", "feature"}});
     } catch (const criper::ToolError&) {
         delete_blocked = true;
     }
     require(delete_blocked, "branch delete should require force=true");
 
-    criper::call_git(context, {{"op", "branch_delete"}, {"path", "repo"}, {"name", "feature"}, {"force", true}});
+    call_git_no_result(context, {{"op", "branch_delete"}, {"path", "repo"}, {"name", "feature"}, {"force", true}});
 
     write_file(root / "repo" / "sample.txt", "changed\n");
     bool hard_reset_blocked = false;
     try {
-        criper::call_git(context, {{"op", "reset"}, {"path", "repo"}, {"mode", "hard"}});
+        call_git_no_result(context, {{"op", "reset"}, {"path", "repo"}, {"mode", "hard"}});
     } catch (const criper::ToolError&) {
         hard_reset_blocked = true;
     }
@@ -132,10 +138,56 @@ void worktree_add_and_list(const FileToolsContext& context) {
     require(found, "worktree_list should include created worktree");
 }
 
+void concurrent_worktree_adds_are_serialized(const FileToolsContext& context, const fs::path& root) {
+    call_git_no_result(context, {{"op", "init"}, {"path", "parallel-repo"}});
+    write_file(root / "parallel-repo" / "sample.txt", "parallel\n");
+    call_git_no_result(context, {{"op", "add"}, {"path", "parallel-repo"}, {"paths", json::array({"sample.txt"})}});
+    call_git_no_result(context, {
+        {"op", "commit"},
+        {"path", "parallel-repo"},
+        {"message", "initial"},
+        {"author_name", "Test Author"},
+        {"author_email", "test@example.invalid"},
+    });
+
+    constexpr int worktree_count = 8;
+    std::vector<std::thread> threads;
+    std::vector<std::string> errors(static_cast<std::size_t>(worktree_count));
+    threads.reserve(static_cast<std::size_t>(worktree_count));
+
+    for (int index = 0; index < worktree_count; ++index) {
+        threads.emplace_back([&context, &errors, index]() {
+            const std::string suffix = std::to_string(index);
+            try {
+                call_git_no_result(context, {
+                    {"op", "worktree_add"},
+                    {"path", "parallel-repo"},
+                    {"worktree_path", "parallel-worktree-" + suffix},
+                    {"branch", "parallel-branch-" + suffix},
+                });
+            } catch (const std::exception& error) {
+                errors[static_cast<std::size_t>(index)] = error.what();
+            }
+        });
+    }
+
+    for (std::thread& thread : threads) {
+        thread.join();
+    }
+
+    for (const std::string& error : errors) {
+        require(error.empty(), "concurrent worktree_add should not fail: " + error);
+    }
+
+    const json list = criper::call_git(context, {{"op", "worktree_list"}, {"path", "parallel-repo"}});
+    require(list["worktrees"].is_array(), "parallel worktree_list should return an array");
+    require(list["worktrees"].size() == static_cast<std::size_t>(worktree_count), "parallel worktree_list should include every worktree");
+}
+
 void path_containment_is_enforced(const FileToolsContext& context) {
     bool blocked = false;
     try {
-        criper::call_git(context, {{"op", "init"}, {"path", "../outside"}});
+        call_git_no_result(context, {{"op", "init"}, {"path", "../outside"}});
     } catch (const criper::ToolError&) {
         blocked = true;
     }
@@ -190,6 +242,7 @@ int main() {
         const FileToolsContext context(temp_dir.path(), false, false);
         init_add_commit_and_log(context, temp_dir.path());
         worktree_add_and_list(context);
+        concurrent_worktree_adds_are_serialized(context, temp_dir.path());
         branch_checkout_reset_guards(context, temp_dir.path());
         path_containment_is_enforced(context);
         redacts_credentials();
